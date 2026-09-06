@@ -1543,9 +1543,10 @@ class NotesWidget:
         def saved(records: list[NoteRecord]) -> None:
             self.records = records
             refreshed = self._find_record(note_id)
-            if refreshed:
+            still_selected = self.selected_note is not None and self.selected_note.id == note_id
+            if refreshed and still_selected:
                 self.selected_note = refreshed
-            if revision == self.editor_revision:
+            if still_selected and revision == self.editor_revision:
                 self.status.configure(text=f"Synced to Google Keep  •  {datetime.now():%H:%M}")
             if self.current_mode == "list" and hasattr(self, "cards") and self.cards.winfo_exists():
                 self.render_notes()
@@ -1618,7 +1619,9 @@ class NotesWidget:
         message = str(error).strip() or error.__class__.__name__
         self._set_sync_identity("Sync error", Palette.DANGER)
         self.status.configure(text=f"Sync error: {message}", fg=Palette.DANGER)
-        messagebox.showerror("Google Keep sync error", message, parent=self.root)
+        # Autosave can finish while collapsed or behind another application.
+        # A modal error dialog disables the dot until that dialog is dismissed.
+        # Keep the error in the footer so the dot and editor remain usable.
 
     def _run(
         self,

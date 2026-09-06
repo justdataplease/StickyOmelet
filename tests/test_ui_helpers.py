@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import unittest
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from threading import Event, get_ident
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from keep_sync import NoteRecord
 from notes_widget import (
@@ -169,6 +170,110 @@ class UiHelperTests(unittest.TestCase):
 
         self.assertEqual(["saved"], results)
         self.assertEqual([main_thread], list(set(root.calling_threads)))
+
+
+class SyncCompletionTests(unittest.TestCase):
+    def _widget(self) -> NotesWidget:
+        widget = NotesWidget.__new__(NotesWidget)
+        widget.root = MainThreadRoot()
+        widget.client = Mock(connected=True, email="writer@example.com")
+        widget.status = Mock()
+        widget.sync_button = Mock()
+        widget.sync_identity = Mock()
+        widget.pending_operations = 0
+        widget.closing = False
+        widget.save_job = None
+        widget.current_mode = "note"
+        widget.selected_note = record("First", "Original")
+        widget.records = [widget.selected_note]
+        widget.editor_revision = 1
+        widget.title_var = Mock()
+        widget.title_var.get.return_value = "First"
+        widget.body_text = Mock()
+        widget.body_text.get.return_value = "Edited"
+        return widget
+
+    def test_background_sync_error_leaves_ui_available_and_next_operation_runs(self) -> None:
+        for minimized in (False, True):
+            with self.subTest(minimized=minimized):
+                widget = self._widget()
+                widget.minimized_to_bubble = minimized
+                failed = Future()
+                failed.set_exception(RuntimeError("Connection unavailable"))
+                succeeded = Future()
+                succeeded.set_result("saved")
+                widget.executor = Mock()
+                widget.executor.submit.side_effect = [failed, succeeded]
+                results = []
+                with patch("notes_widget.messagebox.showerror") as dialog:
+                    widget._run(lambda: None, results.append)
+                    widget.root.run_pending()
+                    dialog.assert_not_called()
+                self.assertEqual(0, widget.pending_operations)
+                self.assertEqual([], results)
+                self.assertIn("Connection unavailable", widget.status.configure.call_args.kwargs["text"])
+                self.assertIn("Sync error", widget.sync_identity.configure.call_args.kwargs["text"])
+                widget._run(lambda: None, results.append)
+                widget.root.run_pending()
+                self.assertEqual(["saved"], results)
+                self.assertEqual(0, widget.pending_operations)
+
+    def test_delayed_save_does_not_change_the_note_being_edited(self) -> None:
+        widget = self._widget()
+        widget._run = Mock()
+        widget.flush_save()
+        saved = widget._run.call_args.args[1]
+        saved_first = replace(widget.selected_note, body="Edited")
+        second = replace(record("Second", "Other body"), id="second")
+        widget.selected_note = second
+        widget.title_var.get.return_value = "Second"
+        widget.body_text.get.return_value = "Second edit"
+        widget.status.reset_mock()
+        saved([saved_first, second])
+        self.assertIs(second, widget.selected_note)
+        self.assertEqual([saved_first, second], widget.records)
+        widget.status.configure.assert_not_called()
+        widget.flush_save()
+        operation = widget._run.call_args.args[0]
+        operation()
+        widget.client.update_note.assert_called_once_with("second", "Second", "Second edit")
+
+    def test_delayed_save_does_not_reselect_a_cleared_note(self) -> None:
+        widget = self._widget()
+        widget._run = Mock()
+        widget.flush_save()
+        saved = widget._run.call_args.args[1]
+        widget.selected_note = None
+        saved([record("First", "Edited")])
+        self.assertIsNone(widget.selected_note)
+
+    def test_completed_save_updates_current_note_without_replacing_new_typing(self) -> None:
+        widget = self._widget()
+        widget._run = Mock()
+        widget.flush_save()
+        saved = widget._run.call_args.args[1]
+        widget.editor_revision += 1
+        widget.body_text.get.return_value = "Edited some more"
+        widget.status.reset_mock()
+        refreshed = replace(widget.selected_note, body="Edited")
+        saved([refreshed])
+        self.assertIs(refreshed, widget.selected_note)
+        widget.body_text.delete.assert_not_called()
+        widget.body_text.insert.assert_not_called()
+        widget.status.configure.assert_not_called()
+        widget.flush_save()
+        widget._run.call_args.args[0]()
+        widget.client.update_note.assert_called_once_with("id", "First", "Edited some more")
+
+    def test_completed_save_updates_current_note_and_reports_success(self) -> None:
+        widget = self._widget()
+        widget._run = Mock()
+        widget.flush_save()
+        saved = widget._run.call_args.args[1]
+        refreshed = replace(widget.selected_note, body="Edited")
+        saved([refreshed])
+        self.assertIs(refreshed, widget.selected_note)
+        self.assertIn("Synced to Google Keep", widget.status.configure.call_args.kwargs["text"])
 
 
 class UndoHistoryTests(unittest.TestCase):

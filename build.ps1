@@ -1,12 +1,6 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-$runningWidget = @(Get-Process -Name "KeepNotesWidget" -ErrorAction SilentlyContinue) + @(Get-Process -Name "JustNotes" -ErrorAction SilentlyContinue) + @(Get-Process -Name "StickyFeather" -ErrorAction SilentlyContinue) + @(Get-Process -Name "StickyDot" -ErrorAction SilentlyContinue)
-if ($runningWidget) {
-    $runningWidget | Stop-Process -Force
-    $runningWidget | Wait-Process -ErrorAction SilentlyContinue
-}
-
 if (-not (Test-Path ".venv\Scripts\python.exe")) {
     python -m venv .venv
 }
@@ -14,7 +8,13 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
 $workPath = Join-Path ([System.IO.Path]::GetTempPath()) "StickyDotBuild-$PID"
 
 & ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r requirements-build.txt
+if ($LASTEXITCODE -ne 0) {
+    throw "Dependency installation failed with exit code $LASTEXITCODE"
+}
 & ".venv\Scripts\python.exe" tools\generate_icon.py
+if ($LASTEXITCODE -ne 0) {
+    throw "Icon generation failed with exit code $LASTEXITCODE"
+}
 & ".venv\Scripts\pyinstaller.exe" `
     --noconfirm `
     --clean `

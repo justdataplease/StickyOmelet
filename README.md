@@ -42,6 +42,8 @@ StickyDot sends operations straight between your computer and Google via `gkeepa
 
 Preferences and the encrypted token live at `%LOCALAPPDATA%\StickyDot\settings.json`. Note content is only held in memory. Disconnecting from inside the app removes the stored credential; your notes stay in Google Keep. The Chrome flow uses a throwaway browser profile that is deleted right after the token is captured.
 
+Sync errors appear in the footer without blocking the dot or editor. Once your connection is back, press `Ctrl+S` to retry the current edit or `F5` to refresh. Keep the app open until important edits have synced.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action | | Shortcut | Action |
@@ -67,6 +69,8 @@ python notes_widget.py   # run from source
 ```
 
 The test suite is fully offline: browser, token-exchange, and Keep calls are replaced with test doubles. GitHub Actions runs the same checks on `windows-latest` for every push and PR. **Never** put a personal Google token in tests, commits, screenshots, or CI variables.
+
+Building leaves running copies of StickyDot open. If you are running `dist\StickyDot.exe`, close it after your notes have synced before rebuilding that file.
 
 ## Known limitations
 
