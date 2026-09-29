@@ -2,7 +2,7 @@
 
 A compact, always-on-top Google Keep client for Windows 11. It gives you a focused desktop list and editor while your notes stay synced with your existing Google Keep account.
 
-### ⬇️ [Download StickyOmelet.exe](https://github.com/justdataplease/StickyOmelet/releases/latest/download/StickyOmelet.exe) &nbsp;·&nbsp; [Release notes (v5.0.0)](https://github.com/justdataplease/StickyOmelet/releases/latest) &nbsp;·&nbsp; [All releases](https://github.com/justdataplease/StickyOmelet/releases)
+### ⬇️ [Download StickyOmelet.exe](https://github.com/justdataplease/StickyOmelet/releases/latest/download/StickyOmelet.exe) &nbsp;·&nbsp; [Release notes (v6.0.0)](https://github.com/justdataplease/StickyOmelet/releases/latest) &nbsp;·&nbsp; [All releases](https://github.com/justdataplease/StickyOmelet/releases)
 
 Single portable `.exe`. No installer, no Python, no account server — StickyOmelet talks directly to Google through the community [`gkeepapi`](https://github.com/kiwiz/gkeepapi) client.
 

@@ -500,7 +500,7 @@ class NotesWidget:
         self.window_buttons = tk.Frame(self.header, bg=Palette.BG)
         self.window_buttons.pack(side="right", padx=(0, 4), fill="y")
         header_icon_font = ("Segoe UI Symbol", 11)
-        self.add_button = HoverButton(self.window_buttons, "✚", self.show_new_menu, bg=Palette.BG, hover=Palette.PANEL_HOVER, fg=Palette.ACCENT, font=header_icon_font, padx=4, pady=9)
+        self.add_button = HoverButton(self.window_buttons, "✚", self.show_new_menu, bg=Palette.BG, hover=Palette.PANEL_HOVER, fg=Palette.MUTED, font=header_icon_font, padx=4, pady=9)
         self.sync_button = HoverButton(self.window_buttons, "↻", self.refresh_from_keep, bg=Palette.BG, hover=Palette.PANEL_HOVER, fg=Palette.DIM, font=header_icon_font, padx=4, pady=9)
         self.settings_button = HoverButton(self.window_buttons, "☰", self.show_settings_menu, bg=Palette.BG, hover=Palette.PANEL_HOVER, fg=Palette.MUTED, font=header_icon_font, padx=4, pady=9)
         for button in (self.add_button, self.sync_button, self.settings_button):
@@ -775,25 +775,30 @@ class NotesWidget:
         self._set_mode_buttons("list")
         self._clear_content()
 
-        self.search_frame = tk.Frame(self.content, bg=Palette.INPUT, highlightthickness=1, highlightbackground=Palette.BORDER)
+        # A filled field with no resting border; the accent outline appears
+        # only while the field has focus.
+        self.search_frame = tk.Frame(self.content, bg=Palette.PANEL, highlightthickness=1, highlightbackground=Palette.PANEL)
         self.search_frame.pack(fill="x", pady=(0, 10))
-        tk.Label(self.search_frame, text="⌕", bg=Palette.INPUT, fg=Palette.DIM, font=("Segoe UI Symbol", 13)).pack(side="left", padx=(10, 4), pady=5)
+        tk.Label(self.search_frame, text="⌕", bg=Palette.PANEL, fg=Palette.DIM, font=("Segoe UI Symbol", 13)).pack(side="left", padx=(12, 4), pady=5)
         self.search_var = tk.StringVar()
-        self.search_entry = tk.Entry(self.search_frame, textvariable=self.search_var, bg=Palette.INPUT, fg=Palette.DIM, insertbackground=Palette.TEXT, relief="flat", bd=0, font=("Segoe UI", 9), **selection_colors())
-        self.search_entry.pack(side="left", fill="x", expand=True, padx=(2, 4), pady=6)
+        self.search_entry = tk.Entry(self.search_frame, textvariable=self.search_var, bg=Palette.PANEL, fg=Palette.DIM, insertbackground=Palette.TEXT, relief="flat", bd=0, font=("Segoe UI", 9), **selection_colors())
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(2, 4), pady=7)
         self.search_entry.insert(0, "Search Google Keep")
         self.search_entry.bind("<FocusIn>", self._search_focus_in)
         self.search_entry.bind("<FocusOut>", self._search_focus_out)
         self.search_var.trace_add("write", lambda *_args: self._queue_render_notes())
-        self.search_clear = HoverButton(self.search_frame, "×", self.clear_search, bg=Palette.INPUT, hover=Palette.PANEL_HOVER, fg=Palette.DIM, font=("Segoe UI", 10), padx=7, pady=4)
+        self.search_clear = HoverButton(self.search_frame, "×", self.clear_search, bg=Palette.PANEL, hover=Palette.PANEL_HOVER, fg=Palette.DIM, font=("Segoe UI", 10), padx=7, pady=4)
         self.search_clear.pack(side="right", padx=(0, 4), pady=2)
 
         filter_row = tk.Frame(self.content, bg=Palette.BG)
         filter_row.pack(fill="x", pady=(0, 10))
         self.filter_buttons: dict[str, HoverButton] = {}
+        # One segmented control: the active segment is the only filled one.
+        filter_pill = tk.Frame(filter_row, bg=Palette.PANEL, padx=3, pady=3)
+        filter_pill.pack(side="left")
         for key, label in (("all", "All"), ("pinned", "Pinned"), ("notes", "Notes"), ("lists", "Lists")):
-            button = HoverButton(filter_row, label, lambda value=key: self.set_list_filter(value), bg=Palette.PANEL, hover=Palette.PANEL_HOVER, fg=Palette.MUTED, font=("Segoe UI Semibold", 8), padx=10, pady=5)
-            button.pack(side="left", padx=(0, 5))
+            button = HoverButton(filter_pill, label, lambda value=key: self.set_list_filter(value), bg=Palette.PANEL, hover=Palette.PANEL_HOVER, fg=Palette.MUTED, font=("Segoe UI Semibold", 8), padx=10, pady=4)
+            button.pack(side="left")
             self.filter_buttons[key] = button
         self.list_count_label = tk.Label(filter_row, text="", bg=Palette.BG, fg=Palette.DIM, font=("Segoe UI", 8))
         self.list_count_label.pack(side="right", pady=6)
@@ -822,7 +827,7 @@ class NotesWidget:
             self.search_entry.configure(fg=Palette.TEXT)
 
     def _search_focus_out(self, _event: tk.Event) -> None:
-        self.search_frame.configure(highlightbackground=Palette.BORDER)
+        self.search_frame.configure(highlightbackground=Palette.PANEL)
         if not self.search_entry.get():
             self.search_entry.insert(0, "Search Google Keep")
             self.search_entry.configure(fg=Palette.DIM)
@@ -894,12 +899,14 @@ class NotesWidget:
         self.status.configure(text=f"{len(notes)} Google Keep note{'s' if len(notes) != 1 else ''}")
 
     def _make_note_card(self, note: NoteRecord) -> None:
-        card = tk.Frame(self.cards, bg=Palette.PANEL, cursor="hand2", highlightthickness=1, highlightbackground=Palette.BORDER)
-        card.pack(fill="x", pady=(0, 8), padx=(0, 1))
+        # A lighter surface and generous padding separate cards; a hard
+        # one-pixel border makes the list read like a form.
+        card = tk.Frame(self.cards, bg=Palette.PANEL, cursor="hand2", highlightthickness=0)
+        card.pack(fill="x", pady=(0, 7), padx=(0, 1))
         accent = tk.Frame(card, bg=Palette.KEEP_COLORS.get(note.color, Palette.ACCENT), width=4)
         accent.pack(side="left", fill="y")
         inner = tk.Frame(card, bg=Palette.PANEL, cursor="hand2")
-        inner.pack(side="left", fill="both", expand=True, padx=14, pady=12)
+        inner.pack(side="left", fill="both", expand=True, padx=16, pady=13)
         heading = tk.Frame(inner, bg=Palette.PANEL, cursor="hand2")
         heading.pack(fill="x")
         title = tk.Label(heading, text=note_title(note), bg=Palette.PANEL, fg=Palette.TEXT, font=("Segoe UI Semibold", 10), anchor="w", cursor="hand2")
@@ -912,11 +919,11 @@ class NotesWidget:
         if len(preview_text) > 145:
             preview_text = preview_text[:142].rstrip() + "…"
         preview = tk.Label(inner, text=preview_text, bg=Palette.PANEL, fg=Palette.MUTED, font=("Segoe UI", 9), anchor="w", justify="left", wraplength=310, cursor="hand2")
-        preview.pack(fill="x", pady=(5, 0))
+        preview.pack(fill="x", pady=(6, 0))
         self.card_previews.append(preview)
         meta_parts = ["CHECKLIST" if note.is_list else "NOTE"]
         meta_parts.extend(note.labels[:3])
-        tk.Label(inner, text="  •  ".join(meta_parts), bg=Palette.PANEL, fg=Palette.DIM, font=("Segoe UI Semibold", 7), anchor="w", cursor="hand2").pack(fill="x", pady=(7, 0))
+        tk.Label(inner, text="  •  ".join(meta_parts), bg=Palette.PANEL, fg=Palette.DIM, font=("Segoe UI Semibold", 7), anchor="w", cursor="hand2").pack(fill="x", pady=(9, 0))
         for widget in self._descendants(card):
             widget.bind("<ButtonPress-1>", lambda _event, frame=card: self._card_color(frame, Palette.PANEL_PRESSED))
             widget.bind("<ButtonRelease-1>", lambda _event, frame=card, item=note: self._card_release(frame, item))
