@@ -21,4 +21,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "StickyDot tests passed." -ForegroundColor Green
+Write-Host "StickyOmelet tests passed." -ForegroundColor Green

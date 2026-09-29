@@ -1,11 +1,11 @@
 ---
-name: release-stickydot
-description: Prepare, verify, tag, and publish portable StickyDot Windows releases. Use when creating a new StickyDot version, release build, Git tag, GitHub Release, release notes, or validating that the portable EXE is safe to publish.
+name: release-stickyomelet
+description: Prepare, verify, tag, and publish portable StickyOmelet Windows releases. Use when creating a new StickyOmelet version, release build, Git tag, GitHub Release, release notes, or validating that the portable EXE is safe to publish.
 ---
 
-# Release StickyDot
+# Release StickyOmelet
 
-Produce one release artifact: `dist\StickyDot.exe`. Do not create or publish setup, MSI, MSIX, certificate, settings, or credential files.
+Produce one release artifact: `dist\StickyOmelet.exe`. Do not create or publish setup, MSI, MSIX, certificate, settings, or credential files.
 
 ## Release workflow
 
@@ -15,13 +15,13 @@ Produce one release artifact: `dist\StickyDot.exe`. Do not create or publish set
 4. Run the deterministic verification script:
 
    ```powershell
-   .\.claude\skills\release-stickydot\scripts\prepare_release.ps1 -Version X.Y.Z
+   .\.claude\skills\release-stickyomelet\scripts\prepare_release.ps1 -Version X.Y.Z
    ```
 
-5. Launch `dist\StickyDot.exe`. Verify the window title, responsiveness, Google Keep connection, theme, compact search, autosave, startup toggle, list editing, and window resizing. Do not expose note content or credentials in logs.
+5. Launch `dist\StickyOmelet.exe`. Verify the window title, responsiveness, Google Keep connection, theme, compact search, autosave, startup toggle, list editing, and window resizing. Do not expose note content or credentials in logs.
 6. Review the final diff and credential-pattern scan. Ensure `.gitignore` excludes `dist`, settings, certificates, caches, and build output.
 7. Commit the reviewed source with `Release vX.Y.Z` and create annotated tag `vX.Y.Z` only when the user has authorized a release.
-8. Publish only when a GitHub remote exists and GitHub authentication succeeds. Upload `dist\StickyDot.exe`, include its SHA-256 in the notes, and disclose that an unsigned community build can trigger SmartScreen.
+8. Publish only when a GitHub remote exists and GitHub authentication succeeds. Upload `dist\StickyOmelet.exe`, include its SHA-256 in the notes, and disclose that an unsigned community build can trigger SmartScreen.
 
 ## Safety rules
 
@@ -37,7 +37,7 @@ Produce one release artifact: `dist\StickyDot.exe`. Do not create or publish set
 After a clean tagged commit and successful `gh auth status`:
 
 ```powershell
-gh release create vX.Y.Z .\dist\StickyDot.exe --title "StickyDot X.Y.Z" --notes-file .\release-notes.md
+gh release create vX.Y.Z .\dist\StickyOmelet.exe --title "StickyOmelet X.Y.Z" --notes-file .\release-notes.md
 ```
 
 Delete temporary release notes after publication unless the project intentionally tracks them.

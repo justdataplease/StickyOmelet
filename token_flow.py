@@ -120,7 +120,7 @@ def obtain_master_token(email: str, timeout_seconds: int = 300) -> tuple[str, st
 
     port = _free_port()
     android_id = secrets.token_hex(8)
-    auth_profile = Path(tempfile.mkdtemp(prefix="StickyDotAuth-"))
+    auth_profile = Path(tempfile.mkdtemp(prefix="StickyOmeletAuth-"))
     flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
     process = subprocess.Popen(
         [

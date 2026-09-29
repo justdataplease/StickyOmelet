@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(4, 2, 3, 0),
-    prodvers=(4, 2, 3, 0),
+    filevers=(5, 0, 0, 0),
+    prodvers=(5, 0, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -13,14 +13,14 @@ VSVersionInfo(
     StringFileInfo([
       StringTable('040904B0', [
         StringStruct('CompanyName', 'justdataplease.com'),
-        StringStruct('FileDescription', 'StickyDot - Google Keep Desktop Notes'),
-        StringStruct('FileVersion', '4.2.3'),
-        StringStruct('InternalName', 'StickyDot'),
+        StringStruct('FileDescription', 'StickyOmelet - Google Keep Desktop Notes'),
+        StringStruct('FileVersion', '5.0.0'),
+        StringStruct('InternalName', 'StickyOmelet'),
         StringStruct('LegalCopyright', 'Copyright (c) justdataplease.com'),
-        StringStruct('OriginalFilename', 'StickyDot.exe'),
-        StringStruct('ProductName', 'StickyDot'),
-        StringStruct('ProductVersion', '4.2.3'),
-        StringStruct('Comments', 'Unofficial Google Keep notes widget. Source: https://github.com/justdataplease/StickyDot')
+        StringStruct('OriginalFilename', 'StickyOmelet.exe'),
+        StringStruct('ProductName', 'StickyOmelet'),
+        StringStruct('ProductVersion', '5.0.0'),
+        StringStruct('Comments', 'Unofficial Google Keep notes widget. Source: https://github.com/justdataplease/StickyOmelet')
       ])
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])

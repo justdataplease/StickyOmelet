@@ -42,18 +42,18 @@ if (-not $SkipBuild) {
     }
 }
 
-$artifact = (Resolve-Path ".\dist\StickyDot.exe").Path
+$artifact = (Resolve-Path ".\dist\StickyOmelet.exe").Path
 $info = Get-Item -LiteralPath $artifact
 if ($info.VersionInfo.FileVersion -ne $Version) {
     throw "Built EXE version $($info.VersionInfo.FileVersion) does not match $Version"
 }
-if ($info.VersionInfo.ProductName -ne "StickyDot") {
-    throw "Built EXE product name is not StickyDot"
+if ($info.VersionInfo.ProductName -ne "StickyOmelet") {
+    throw "Built EXE product name is not StickyOmelet"
 }
 
-$setupArtifacts = @(Get-ChildItem ".\dist" -Filter "StickyDot-Setup-*.exe" -File -ErrorAction SilentlyContinue)
+$setupArtifacts = @(Get-ChildItem ".\dist" -Filter "StickyOmelet-Setup-*.exe" -File -ErrorAction SilentlyContinue)
 if ($setupArtifacts.Count -gt 0) {
-    throw "Portable-only release violated: remove stale StickyDot setup executables from dist."
+    throw "Portable-only release violated: remove stale StickyOmelet setup executables from dist."
 }
 
 $signature = Get-AuthenticodeSignature -LiteralPath $artifact

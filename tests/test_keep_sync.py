@@ -124,11 +124,11 @@ class FakeKeep:
 
 
 class SettingsStoreTests(unittest.TestCase):
-    def test_defaults_are_created_in_StickyDot_folder(self) -> None:
+    def test_defaults_are_created_in_StickyOmelet_folder(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             with patch.dict(os.environ, {"LOCALAPPDATA": temporary}):
                 store = SettingsStore()
-                self.assertEqual(Path(temporary) / "StickyDot" / "settings.json", store.path)
+                self.assertEqual(Path(temporary) / "StickyOmelet" / "settings.json", store.path)
                 self.assertEqual(4, store.data["version"])
                 self.assertEqual("400x540+80+80", store.data["geometry"])
                 store.save()
@@ -174,9 +174,26 @@ class SettingsStoreTests(unittest.TestCase):
             self.assertEqual("encrypted-value", store.data["token_dpapi"])
             self.assertTrue(store.path.exists())
 
+    def test_settings_from_the_stickydot_brand_are_carried_over(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            legacy = base / "StickyDot" / "settings.json"
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text(
+                json.dumps({"version": 4, "email": "person@example.com", "token_dpapi": "encrypted-value", "bubble_position": "10,20"}),
+                encoding="utf-8",
+            )
+            with patch.dict(os.environ, {"LOCALAPPDATA": temporary}):
+                store = SettingsStore()
+
+            self.assertEqual(base / "StickyOmelet" / "settings.json", store.path)
+            self.assertEqual("encrypted-value", store.data["token_dpapi"])
+            self.assertEqual("10,20", store.data["bubble_position"])
+            self.assertTrue(legacy.exists(), "the previous brand's file is copied, not moved")
+
     def test_invalid_json_is_quarantined(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "StickyDot"
+            folder = Path(temporary) / "StickyOmelet"
             folder.mkdir()
             (folder / "settings.json").write_text("{not-json", encoding="utf-8")
             with patch.dict(os.environ, {"LOCALAPPDATA": temporary}):

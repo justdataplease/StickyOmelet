@@ -5,7 +5,7 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
     python -m venv .venv
 }
 
-$workPath = Join-Path ([System.IO.Path]::GetTempPath()) "StickyDotBuild-$PID"
+$workPath = Join-Path ([System.IO.Path]::GetTempPath()) "StickyOmeletBuild-$PID"
 
 & ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check -r requirements-build.txt
 if ($LASTEXITCODE -ne 0) {
@@ -22,9 +22,9 @@ if ($LASTEXITCODE -ne 0) {
     --onefile `
     --windowed `
     --noupx `
-    --name "StickyDot" `
-    --icon "assets\stickydot.ico" `
-    --add-data "assets\stickydot.ico;assets" `
+    --name "StickyOmelet" `
+    --icon "assets\stickyomelet.ico" `
+    --add-data "assets\stickyomelet.ico;assets" `
     --add-data "assets\dot-mark.png;assets" `
     --add-data "assets\dot-bubble.png;assets" `
     --version-file "assets\version_info.txt" `
@@ -40,7 +40,7 @@ if ($LASTEXITCODE -ne 0) {
 $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $resolvedWorkPath = [System.IO.Path]::GetFullPath($workPath)
 if (-not $resolvedWorkPath.StartsWith($tempRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
-    -not ([System.IO.Path]::GetFileName($resolvedWorkPath)).StartsWith("StickyDotBuild-", [System.StringComparison]::Ordinal)) {
+    -not ([System.IO.Path]::GetFileName($resolvedWorkPath)).StartsWith("StickyOmeletBuild-", [System.StringComparison]::Ordinal)) {
     throw "Refusing to clean unexpected build path: $resolvedWorkPath"
 }
 if (Test-Path -LiteralPath $resolvedWorkPath) {
@@ -62,6 +62,9 @@ if (Test-Path "dist\JustNotes.exe") {
 if (Test-Path "dist\StickyFeather.exe") {
     Remove-Item -LiteralPath "dist\StickyFeather.exe" -Force
 }
+if (Test-Path "dist\StickyDot.exe") {
+    Remove-Item -LiteralPath "dist\StickyDot.exe" -Force
+}
 
 Write-Host ""
-Write-Host "Built: $PSScriptRoot\dist\StickyDot.exe" -ForegroundColor Green
+Write-Host "Built: $PSScriptRoot\dist\StickyOmelet.exe" -ForegroundColor Green

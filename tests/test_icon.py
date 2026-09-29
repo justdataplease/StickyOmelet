@@ -11,12 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class IconTests(unittest.TestCase):
     def test_icon_contains_windows_taskbar_sizes(self) -> None:
-        with Image.open(ROOT / "assets" / "stickydot.ico") as icon:
+        with Image.open(ROOT / "assets" / "stickyomelet.ico") as icon:
             sizes = set(icon.info.get("sizes", set()))
         self.assertTrue({(16, 16), (24, 24), (32, 32), (48, 48), (256, 256)}.issubset(sizes))
 
     def test_small_taskbar_icon_has_transparent_corners_and_visible_dot(self) -> None:
-        with Image.open(ROOT / "assets" / "stickydot.ico") as icon:
+        with Image.open(ROOT / "assets" / "stickyomelet.ico") as icon:
             small = icon.ico.getimage((32, 32)).convert("RGBA")
         corners = (small.getpixel((0, 0)), small.getpixel((31, 0)), small.getpixel((0, 31)), small.getpixel((31, 31)))
         self.assertTrue(all(pixel[3] <= 2 for pixel in corners))

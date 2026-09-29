@@ -1,1 +1,1 @@
-"""Offline test suite for StickyDot."""
+"""Offline test suite for StickyOmelet."""

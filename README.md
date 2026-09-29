@@ -1,10 +1,10 @@
-# StickyDot
+# StickyOmelet
 
 A compact, always-on-top Google Keep client for Windows 11. It gives you a focused desktop list and editor while your notes stay synced with your existing Google Keep account.
 
-### ⬇️ [Download StickyDot.exe](https://github.com/justdataplease/StickyDot/releases/latest/download/StickyDot.exe) &nbsp;·&nbsp; [Release notes (v4.2.2)](https://github.com/justdataplease/StickyDot/releases/latest) &nbsp;·&nbsp; [All releases](https://github.com/justdataplease/StickyDot/releases)
+### ⬇️ [Download StickyOmelet.exe](https://github.com/justdataplease/StickyOmelet/releases/latest/download/StickyOmelet.exe) &nbsp;·&nbsp; [Release notes (v5.0.0)](https://github.com/justdataplease/StickyOmelet/releases/latest) &nbsp;·&nbsp; [All releases](https://github.com/justdataplease/StickyOmelet/releases)
 
-Single portable `.exe`. No installer, no Python, no account server — StickyDot talks directly to Google through the community [`gkeepapi`](https://github.com/kiwiz/gkeepapi) client.
+Single portable `.exe`. No installer, no Python, no account server — StickyOmelet talks directly to Google through the community [`gkeepapi`](https://github.com/kiwiz/gkeepapi) client.
 
 > [!IMPORTANT]
 > **Unofficial community project** — not affiliated with Google or endorsed by it. Google offers no supported consumer Keep API, so authentication or sync can break without notice if Google changes its private interfaces.
@@ -24,7 +24,7 @@ Single portable `.exe`. No installer, no Python, no account server — StickyDot
 
 **Requirements:** Windows 11 (10 untested), an internet connection, a Google account with Keep, and Chrome for the one-time connection.
 
-1. **[Download `StickyDot.exe`](https://github.com/justdataplease/StickyDot/releases/latest/download/StickyDot.exe)** and move it to a permanent folder such as `C:\StickyDot\` (don't run it from Downloads or a temp folder).
+1. **[Download `StickyOmelet.exe`](https://github.com/justdataplease/StickyOmelet/releases/latest/download/StickyOmelet.exe)** and move it to a permanent folder such as `C:\StickyOmelet\` (don't run it from Downloads or a temp folder).
 2. Double-click to launch. If SmartScreen appears, choose **More info → Run anyway**.
 3. On first launch, enter your Google email, pick **Connect securely through Chrome**, and sign in through the temporary Chrome window. Notes load when it closes.
 
@@ -33,14 +33,18 @@ An existing `gkeepapi` master token can also be entered manually — treat it li
 Open a specific note from a terminal:
 
 ```powershell
-StickyDot.exe --note "Shopping list"
+StickyOmelet.exe --note "Shopping list"
 ```
+
+## Upgrading from StickyDot
+
+StickyOmelet is the same app under a new name. Replace `StickyDot.exe` with `StickyOmelet.exe` and launch it: your saved Google Keep connection, window and dot positions, theme, and **Start with Windows** choice are carried over automatically on first run.
 
 ## How sync and storage work
 
-StickyDot sends operations straight between your computer and Google via `gkeepapi` — there's no intermediary server, and Google Keep stays the source of truth. Avoid editing the same note at the same time in another Keep client; the last sync wins.
+StickyOmelet sends operations straight between your computer and Google via `gkeepapi` — there's no intermediary server, and Google Keep stays the source of truth. Avoid editing the same note at the same time in another Keep client; the last sync wins.
 
-Preferences and the encrypted token live at `%LOCALAPPDATA%\StickyDot\settings.json`. Note content is only held in memory. Disconnecting from inside the app removes the stored credential; your notes stay in Google Keep. The Chrome flow uses a throwaway browser profile that is deleted right after the token is captured.
+Preferences and the encrypted token live at `%LOCALAPPDATA%\StickyOmelet\settings.json`. Note content is only held in memory. Disconnecting from inside the app removes the stored credential; your notes stay in Google Keep. The Chrome flow uses a throwaway browser profile that is deleted right after the token is captured.
 
 Sync errors appear in the footer without blocking the dot or editor. Once your connection is back, press `Ctrl+S` to retry the current edit or `F5` to refresh. Keep the app open until important edits have synced.
 
@@ -59,18 +63,18 @@ Sync errors appear in the footer without blocking the dot or editor. Once your c
 Python 3.12 for development and release builds.
 
 ```powershell
-git clone <repository-url> && cd StickyDot
+git clone <repository-url> && cd StickyOmelet
 python -m venv .venv; .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-build.txt
 
 python notes_widget.py   # run from source
 .\run-tests.ps1          # offline test suite (no Google credentials needed)
-.\build.ps1              # -> dist\StickyDot.exe
+.\build.ps1              # -> dist\StickyOmelet.exe
 ```
 
 The test suite is fully offline: browser, token-exchange, and Keep calls are replaced with test doubles. GitHub Actions runs the same checks on `windows-latest` for every push and PR. **Never** put a personal Google token in tests, commits, screenshots, or CI variables.
 
-Building leaves running copies of StickyDot open. If you are running `dist\StickyDot.exe`, close it after your notes have synced before rebuilding that file.
+Building leaves running copies of StickyOmelet open. If you are running `dist\StickyOmelet.exe`, close it after your notes have synced before rebuilding that file.
 
 ## Known limitations
 

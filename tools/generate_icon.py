@@ -5,7 +5,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 
-GOLD = (232, 181, 50)  # #E8B532 - the StickyDot brand yellow
+GOLD = (232, 181, 50)  # #E8B532 - the StickyOmelet brand yellow
 WHITE = "#FFFFFF"
 BUBBLE_BORDER = "#D5DBE5"
 
@@ -55,7 +55,7 @@ def make_bubble(size: int = 64) -> Image.Image:
 def main() -> None:
     ASSETS.mkdir(parents=True, exist_ok=True)
     sizes = [(16, 16), (20, 20), (24, 24), (32, 32), (40, 40), (48, 48), (64, 64), (128, 128), (256, 256)]
-    make_dot(256, padding=0.05).save(ASSETS / "stickydot.ico", format="ICO", sizes=sizes)
+    make_dot(256, padding=0.05).save(ASSETS / "stickyomelet.ico", format="ICO", sizes=sizes)
     make_dot(22, padding=0.02).save(ASSETS / "dot-mark.png", format="PNG")
     make_bubble().save(ASSETS / "dot-bubble.png", format="PNG")
 

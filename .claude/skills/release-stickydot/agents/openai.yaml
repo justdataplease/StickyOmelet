@@ -1,4 +1,0 @@
-interface:
-  display_name: "Release StickyDot"
-  short_description: "Verify and publish portable Windows releases"
-  default_prompt: "Use $release-stickydot to verify and publish a portable StickyDot release."

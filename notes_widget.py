@@ -21,8 +21,8 @@ from token_flow import detect_google_email, obtain_master_token
 from windows_integration import WindowsStartup
 
 
-APP_NAME = "StickyDot"
-APP_ID = "StickyDot.justdataplease.1"
+APP_NAME = "StickyOmelet"
+APP_ID = "StickyOmelet.justdataplease.1"
 TOKEN_HELP_URL = "https://gkeepapi.readthedocs.io/en/latest/#obtaining-a-master-token"
 PROJECT_URL = "https://justdataplease.com"
 MIN_WINDOW_WIDTH = 340
@@ -400,6 +400,8 @@ class NotesWidget:
         self.normal_geometry = ""
         self.normal_ex_style: int | None = None
         self.normal_class_style: int | None = None
+        self._bubble_surface_cache: dict[tuple[int, int], bytes] = {}
+        self._bubble_repaint_job: str | None = None
         self.pending_operations = 0
         self.closing = False
         self.click_away_job: str | None = None
@@ -441,7 +443,7 @@ class NotesWidget:
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     def _set_window_icon(self) -> None:
-        icon_path = self._asset_path("stickydot.ico")
+        icon_path = self._asset_path("stickyomelet.ico")
         try:
             if icon_path.exists():
                 self.root.iconbitmap(default=str(icon_path))
@@ -491,7 +493,7 @@ class NotesWidget:
         self.brand_mark.bind("<ButtonPress-1>", self._start_drag)
         self.brand_mark.bind("<B1-Motion>", self._drag)
         self.brand_mark.bind("<ButtonRelease-1>", self._end_drag)
-        Tooltip(self.brand_mark, "Drag to move StickyDot")
+        Tooltip(self.brand_mark, "Drag to move StickyOmelet")
         self.view_toggle_button = HoverButton(brand, "⇄", self.toggle_mode, bg=Palette.BG, hover=Palette.PANEL_HOVER, fg=Palette.DIM, font=("Segoe UI Symbol", 12), padx=6, pady=8)
         Tooltip(self.view_toggle_button, "Toggle notes list and selected note (Ctrl+L)")
 
@@ -527,7 +529,7 @@ class NotesWidget:
         Tooltip(self.settings_button, "Appearance and startup")
         Tooltip(self.pin_button, "Toggle always on top")
         Tooltip(self.minimize_button, "Minimize to dot bubble")
-        Tooltip(self.close_button, "Close StickyDot")
+        Tooltip(self.close_button, "Close StickyOmelet")
         Tooltip(self.add_button, "Create a text note or checklist")
 
         self.content = tk.Frame(self.shell, bg=Palette.BG)
@@ -1329,7 +1331,7 @@ class NotesWidget:
             WindowsStartup.set_enabled(enabled)
         except (OSError, RuntimeError) as error:
             self.dismiss_settings_menu()
-            messagebox.showerror("StickyDot", f"Could not update Windows startup:\n\n{error}", parent=self.root)
+            messagebox.showerror("StickyOmelet", f"Could not update Windows startup:\n\n{error}", parent=self.root)
             return
         self.dismiss_settings_menu()
         self.status.configure(
@@ -1820,12 +1822,14 @@ class NotesWidget:
         self._own_window_was_foreground = foreground_is_ours
         if should_collapse:
             self.minimize()
+        elif self.minimized_to_bubble:
+            self._heal_bubble_styling()
 
         if not self.closing:
             self.click_away_job = self.root.after(CLICK_AWAY_POLL_MS, self._monitor_click_away)
 
     def _foreground_is_own_window(self) -> bool:
-        """True when the active window belongs to StickyDot (a menu, tooltip or
+        """True when the active window belongs to StickyOmelet (a menu, tooltip or
         dialog) rather than another application."""
         if sys.platform != "win32":
             # focus_get() is None only when no window in this app holds focus.
@@ -1898,7 +1902,76 @@ class NotesWidget:
         canvas.bind("<ButtonPress-1>", self._start_bubble_drag)
         canvas.bind("<B1-Motion>", self._drag_bubble)
         canvas.bind("<ButtonRelease-1>", self._release_bubble)
+        # Windows only asks Tk to paint the launcher when it has stopped showing
+        # the per-pixel-alpha surface (a display change, sleep/resume, a style
+        # reset). Left alone, that paints the white canvas inside the circular
+        # region: a plain white disc stuck on the desktop. Re-present the
+        # transparent surface instead.
+        for sequence in ("<Expose>", "<Configure>", "<Map>", "<Visibility>"):
+            canvas.bind(sequence, self._schedule_bubble_repaint, add="+")
         Tooltip(canvas, "Click to open · drag to move")
+
+    def _heal_bubble_styling(self) -> None:
+        """Cheap per-poll check that the launcher still has its native styling.
+
+        Windows can strip WS_EX_LAYERED or the window region without telling
+        Tk (display or DPI changes, sleep/resume). The launcher then shows as
+        an opaque white disc. Rebuild the styling when either is missing."""
+        if sys.platform != "win32" or self.closing:
+            return
+        try:
+            user32 = ctypes.windll.user32
+            user32.GetWindowLongPtrW.argtypes = (ctypes.c_void_p, ctypes.c_int)
+            user32.GetWindowLongPtrW.restype = ctypes.c_ssize_t
+            hwnd = self._native_window_handle()
+            ex_style = int(user32.GetWindowLongPtrW(hwnd, -20))  # GWL_EXSTYLE
+            if not (ex_style & 0x00080000):  # WS_EX_LAYERED
+                self._schedule_bubble_repaint()
+        except (AttributeError, OSError):
+            pass
+
+    def _schedule_bubble_repaint(self, _event: tk.Event | None = None) -> None:
+        if not self.minimized_to_bubble or self._bubble_repaint_job:
+            return
+        self._bubble_repaint_job = self.root.after(30, self._repaint_bubble_surface)
+
+    def _repaint_bubble_surface(self) -> None:
+        """Restore the transparent launcher if Windows dropped its surface."""
+        self._bubble_repaint_job = None
+        if not self.minimized_to_bubble or self.closing or sys.platform != "win32":
+            return
+        try:
+            user32 = ctypes.windll.user32
+            user32.GetWindowLongPtrW.argtypes = (ctypes.c_void_p, ctypes.c_int)
+            user32.GetWindowLongPtrW.restype = ctypes.c_ssize_t
+            user32.GetWindowRgn.argtypes = (ctypes.c_void_p, ctypes.c_void_p)
+            user32.GetWindowRgn.restype = ctypes.c_int
+            gdi32 = ctypes.windll.gdi32
+            gdi32.CreateRectRgn.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int)
+            gdi32.CreateRectRgn.restype = ctypes.c_void_p
+            gdi32.DeleteObject.argtypes = (ctypes.c_void_p,)
+            hwnd = self._native_window_handle()
+            ex_style = int(user32.GetWindowLongPtrW(hwnd, -20))  # GWL_EXSTYLE
+            scratch = gdi32.CreateRectRgn(0, 0, 0, 0)
+            try:
+                region_kind = user32.GetWindowRgn(hwnd, scratch) if scratch else 0
+            finally:
+                if scratch:
+                    gdi32.DeleteObject(scratch)
+            if not (ex_style & 0x00080000) or region_kind == 0:  # no WS_EX_LAYERED or no region
+                # The native bubble styling was reset wholesale: rebuild it.
+                self._set_native_bubble_mode(True)
+                return
+
+            class WindowRect(ctypes.Structure):
+                _fields_ = (("left", ctypes.c_long), ("top", ctypes.c_long), ("right", ctypes.c_long), ("bottom", ctypes.c_long))
+
+            bounds = WindowRect()
+            user32.GetWindowRect.argtypes = (ctypes.c_void_p, ctypes.POINTER(WindowRect))
+            user32.GetWindowRect(hwnd, ctypes.byref(bounds))
+            self._paint_layered_bubble(hwnd, max(1, bounds.right - bounds.left), max(1, bounds.bottom - bounds.top))
+        except (AttributeError, OSError):
+            pass
 
     def _native_window_handle(self) -> int:
         """Return Tk's actual top-level HWND instead of its inner client HWND."""
@@ -1941,11 +2014,15 @@ class NotesWidget:
             hwnd = self._native_window_handle()
             if enabled:
                 style = int(user32.GetWindowLongPtrW(hwnd, -20))  # GWL_EXSTYLE
-                self.normal_ex_style = style
+                # Re-applying bubble mode (after Windows reset the styling)
+                # must not capture the bubble's own styles as the "normal" ones.
+                if self.normal_ex_style is None:
+                    self.normal_ex_style = style
                 bubble_style = (style | 0x00080000 | 0x00000080) & ~0x00040000  # LAYERED | TOOLWINDOW, no APPWINDOW
                 user32.SetWindowLongPtrW(hwnd, -20, bubble_style)
                 class_style = int(user32.GetClassLongPtrW(hwnd, -26))  # GCL_STYLE
-                self.normal_class_style = class_style
+                if self.normal_class_style is None:
+                    self.normal_class_style = class_style
                 user32.SetClassLongPtrW(hwnd, -26, class_style & ~0x00020000)  # no CS_DROPSHADOW
 
                 class WindowRect(ctypes.Structure):
@@ -2003,6 +2080,28 @@ class NotesWidget:
                     ctypes.windll.gdi32.DeleteObject(region)
                 except (AttributeError, OSError):
                     pass
+
+    def _premultiplied_bubble_pixels(self, width: int, height: int) -> bytes:
+        """Return the launcher art as premultiplied BGRA rows, cached per size.
+
+        The surface is re-presented whenever Windows drops it, so decoding and
+        premultiplying the PNG must be cheap enough to repeat."""
+        cache = getattr(self, "_bubble_surface_cache", None)
+        if cache is None:
+            cache = self._bubble_surface_cache = {}
+        cached = cache.get((width, height))
+        if cached is not None:
+            return cached
+        with Image.open(self._asset_path("dot-bubble.png")) as source:
+            rendered = source.convert("RGBA").resize((width, height), Image.Resampling.LANCZOS)
+        pixels = bytearray(rendered.tobytes("raw", "BGRA"))
+        for offset in range(0, len(pixels), 4):
+            alpha = pixels[offset + 3]
+            pixels[offset] = pixels[offset] * alpha // 255
+            pixels[offset + 1] = pixels[offset + 1] * alpha // 255
+            pixels[offset + 2] = pixels[offset + 2] * alpha // 255
+        cache[(width, height)] = bytes(pixels)
+        return cache[(width, height)]
 
     def _paint_layered_bubble(self, hwnd: int, width: int, height: int) -> None:
         """Paint the circular launcher as a premultiplied per-pixel-alpha surface."""
@@ -2075,15 +2174,8 @@ class NotesWidget:
                 return
             previous_bitmap = gdi32.SelectObject(memory_dc, bitmap)
 
-            with Image.open(self._asset_path("dot-bubble.png")) as source:
-                rendered = source.convert("RGBA").resize((width, height), Image.Resampling.LANCZOS)
-            pixels = bytearray(rendered.tobytes("raw", "BGRA"))
-            for offset in range(0, len(pixels), 4):
-                alpha = pixels[offset + 3]
-                pixels[offset] = pixels[offset] * alpha // 255
-                pixels[offset + 1] = pixels[offset + 1] * alpha // 255
-                pixels[offset + 2] = pixels[offset + 2] * alpha // 255
-            ctypes.memmove(bits, bytes(pixels), len(pixels))
+            pixels = self._premultiplied_bubble_pixels(width, height)
+            ctypes.memmove(bits, pixels, len(pixels))
 
             class WindowRect(ctypes.Structure):
                 _fields_ = (("left", ctypes.c_long), ("top", ctypes.c_long), ("right", ctypes.c_long), ("bottom", ctypes.c_long))
@@ -2107,7 +2199,7 @@ class NotesWidget:
                 ctypes.c_uint,
             )
             user32.UpdateLayeredWindow.restype = ctypes.c_bool
-            user32.UpdateLayeredWindow(
+            presented = user32.UpdateLayeredWindow(
                 hwnd,
                 screen_dc,
                 ctypes.byref(destination),
@@ -2118,6 +2210,14 @@ class NotesWidget:
                 ctypes.byref(blend),
                 0x00000002,  # ULW_ALPHA
             )
+            attempts = getattr(self, "_bubble_repaint_attempts", 0)
+            if presented:
+                self._bubble_repaint_attempts = 0
+            elif not self.closing and attempts < 10:
+                # Windows refused the surface (typically while a style change is
+                # still settling). Without it the region shows the white canvas.
+                self._bubble_repaint_attempts = attempts + 1
+                self._schedule_bubble_repaint()
         finally:
             if previous_bitmap:
                 gdi32.SelectObject(memory_dc, previous_bitmap)
@@ -2230,6 +2330,12 @@ class NotesWidget:
         if not self.minimized_to_bubble:
             return
         geometry = self._restored_window_geometry()
+        if self._bubble_repaint_job:
+            try:
+                self.root.after_cancel(self._bubble_repaint_job)
+            except tk.TclError:
+                pass
+            self._bubble_repaint_job = None
         if self.bubble_canvas and self.bubble_canvas.winfo_exists():
             self.bubble_canvas.destroy()
         self.bubble_canvas = None
@@ -2311,7 +2417,7 @@ class NotesWidget:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="StickyDot always-on-top Google Keep notes widget.")
+    parser = argparse.ArgumentParser(description="StickyOmelet always-on-top Google Keep notes widget.")
     parser.add_argument("--note", nargs="+", help="Open a Google Keep note by title or ID")
     args = parser.parse_args()
     requested_note = " ".join(args.note) if args.note else None
@@ -2320,7 +2426,15 @@ def main() -> None:
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
         except (AttributeError, OSError):
             pass
+        try:
+            # If the UI thread ever stalls, Windows replaces the window with a
+            # frosted "ghost" copy. For the borderless dot that ghost is a
+            # white disc left on the desktop with no frame to explain it.
+            ctypes.windll.user32.DisableProcessWindowsGhosting()
+        except (AttributeError, OSError):
+            pass
     root = tk.Tk()
+    WindowsStartup.migrate_legacy_entry()
     NotesWidget(root, requested_note=requested_note)
     root.mainloop()
 

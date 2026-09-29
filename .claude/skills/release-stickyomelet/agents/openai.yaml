@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release StickyOmelet"
+  short_description: "Verify and publish portable Windows releases"
+  default_prompt: "Use $release-stickyomelet to verify and publish a portable StickyOmelet release."

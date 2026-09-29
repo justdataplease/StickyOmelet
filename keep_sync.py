@@ -40,7 +40,7 @@ class WindowsSecret:
         kernel32 = ctypes.windll.kernel32
         success = crypt32.CryptProtectData(
             ctypes.byref(source),
-            "StickyDot",
+            "StickyOmelet",
             None,
             None,
             None,
@@ -89,10 +89,11 @@ class SettingsStore:
     def __init__(self) -> None:
         local = os.environ.get("LOCALAPPDATA")
         base = Path(local) if local else Path.home() / "AppData" / "Local"
-        self.folder = base / "StickyDot"
+        self.folder = base / "StickyOmelet"
         self.path = self.folder / "settings.json"
         self.folder.mkdir(parents=True, exist_ok=True)
         legacy_paths = (
+            base / "StickyDot" / "settings.json",
             base / "StickyFeather" / "settings.json",
             base / "JustNotes" / "settings.json",
             base / "KeepNotesWidget" / "settings.json",

@@ -18,7 +18,7 @@ class ProjectMetadataTests(unittest.TestCase):
 
     def test_windows_metadata_uses_current_product_name(self) -> None:
         metadata = (ROOT / "assets" / "version_info.txt").read_text(encoding="utf-8")
-        self.assertIn("StickyDot", metadata)
+        self.assertIn("StickyOmelet", metadata)
         self.assertIn("justdataplease.com", metadata)
         self.assertNotIn("JustNotes", metadata)
 
@@ -26,14 +26,14 @@ class ProjectMetadataTests(unittest.TestCase):
         self.assertFalse((ROOT / "settings.json").exists())
 
     def test_claude_release_skill_enforces_portable_only_builds(self) -> None:
-        skill = (ROOT / ".claude" / "skills" / "release-stickydot" / "SKILL.md").read_text(encoding="utf-8")
+        skill = (ROOT / ".claude" / "skills" / "release-stickyomelet" / "SKILL.md").read_text(encoding="utf-8")
         script = (
-            ROOT / ".claude" / "skills" / "release-stickydot" / "scripts" / "prepare_release.ps1"
+            ROOT / ".claude" / "skills" / "release-stickyomelet" / "scripts" / "prepare_release.ps1"
         ).read_text(encoding="utf-8")
-        self.assertIn("name: release-stickydot", skill)
+        self.assertIn("name: release-stickyomelet", skill)
         self.assertIn("one release artifact", skill)
         self.assertIn("PortableOnly = $true", script)
-        self.assertIn("StickyDot-Setup-*.exe", script)
+        self.assertIn("StickyOmelet-Setup-*.exe", script)
 
 
 if __name__ == "__main__":
